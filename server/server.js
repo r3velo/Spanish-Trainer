@@ -8,12 +8,14 @@ app.use(express.json());
 
 const db = await initDB();
 
-app.get("/words/:group", async (req, res) => {
-  const words = await db.all(
-    "SELECT * FROM words WHERE wordGroup = ?",
-    req.params.group
-  );
+app.get("/words", async (req, res) => {
+  const words = await db.all("SELECT * FROM words");
   res.json(words);
+});
+
+app.get("/groups", async (req, res) => {
+  const groups = await db.all("SELECT DISTINCT wordGroup FROM words");
+  res.json(groups.map(g => g.wordGroup));
 });
 
 app.post("/words", async (req, res) => {
@@ -28,14 +30,23 @@ app.post("/words", async (req, res) => {
 });
 
 app.put("/words/:id", async (req, res) => {
-  const { correctStreak, timesWrong, lastReviewed } = req.body;
+  const { english, spanish, correctStreak, timesWrong, lastReviewed } = req.body;
   await db.run(
-    "UPDATE words SET correctStreak=?, timesWrong=?, lastReviewed=? WHERE id=?",
+    `UPDATE words 
+     SET english=?, spanish=?, correctStreak=?, timesWrong=?, lastReviewed=? 
+     WHERE id=?`,
+    english,
+    spanish,
     correctStreak,
     timesWrong,
     lastReviewed,
     req.params.id
   );
+  res.json({ success: true });
+});
+
+app.delete("/words/:id", async (req, res) => {
+  await db.run("DELETE FROM words WHERE id=?", req.params.id);
   res.json({ success: true });
 });
 
